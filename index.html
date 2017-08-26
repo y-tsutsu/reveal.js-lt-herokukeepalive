@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/sky.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown
+					data-separator="\n---\n$"
+					data-separator-vertical="\n--\n$">
+					<script type="text/template">
+
+### 無料でHerokuを常時起動
+
+---
+
+### Herokuとは
+
+heroku（ヘロク）とは，PaaS（Platform as a Service）と呼ばれるサービスで，アプリケーションを実行するためのプラットフォームです．
+
+--
+
+### Herokuの無料プラン
+
+* 1ヶ月につき550 dyno hours
+* クレジットカード登録で1000 dyno hours
+* 30分アクセスしなければスリープ
+
+---
+
+### 常時起動させたい
+
+スリープするとアクセス時に10秒ほど起動時間がかかるので，常時起動させたい．
+
+--
+
+アドオンの`「Heroku Scheduker」`を使って定期的に`curl`でアクセスすれば簡単に常時起動できる．
+<br><br>
+※アドオンの利用はクレカの登録が必要．  
+（Freeでも）
+
+--
+
+クレカの登録なしで対応したい．
+
+料金プランが変わったりするので，事故らないようにクレカ無しで利用したい．
+
+---
+
+### 常時起動のポイント
+
+* スリープしないように定期的にアクセスが必要
+* 24 * 31 = 744h なので眠らせる時間帯も必要
+
+--
+
+### HTTP通信のサンプル
+
+pythonの標準ライブラリで対応
+
+```
+import urllib.request
+urllib.request.urlopen('https://example.com')
+```
+
+--
+
+### スケジュール実行
+
+pythonの`APScheduler`で対応
+
+```
+from apscheduler.schedulers.blocking import BlockingScheduler
+sc = BlockingScheduler()
+
+@sc.scheduled_job('interval', minutes=10)
+def do_work():
+    print('Hello, world!')
+
+sc.start()
+```
+
+※intervalの他にも日付指定や曜日指定なども可能
+
+---
+
+### クラウドでの実行環境
+
+このコードを実行する環境を用意する．
+
+--
+
+* Cloud9  
+10分程度アクセスがなければシャットダウン
+* Codeanywhere  
+10分程度アクセスがなければシャットダウン
+* PythonAnywhere  
+外部アクセスに制限がかかっている
+
+---
+
+### Herokuスケジュール処理
+
+[Scheduled Jobs with Custom Clock](https://devcenter.heroku.com/articles/clock-processes-python)
+
+--
+
+* 550hの制限があるのでKeep-Aliveプロセスは2アカウントで運用
+* 半日交代でお互いを起動 / 終了しながら対象のURLにアクセス
+* 深夜時間は対象のURLへのアクセスをスキップ
+
+--
+
+### PythonでHeroku API
+
+pythonの`heroku3`で対応
+
+```
+import heroku3
+conn = heroku3.from_key('HEROKU_API_KEY')
+app = conn.apps()['APP_NAME']
+app.do_sometihng()
+```
+
+---
+
+### まとめ
+
+クレカの登録なしにHerokuのWebアプリを日中のあいだ常時起動することができました．
+
+---
+
+### Thank U for Reading
+### tsutsu
+					</script>
+				</sectin>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
